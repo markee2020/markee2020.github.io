@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html>
+
+	<head>
+
+		<meta charset="utf-8" />
+		<link rel="icon" href="logo.jpg" type="image/x-icon" />
+		<meta http-equiv="refresh" content="0;url=http://39.98.177.239/">
+		<title>北京公共交通信息</title>
+		<style>
+			html,
+			body {
+				width: 100%;
+				height: 100%;
+				padding: 0;
+				margin: 0;
+			}
+			
+			#head {
+				width: 100%;
+				height: 10%;
+				vertical-align: middle;
+				text-align: center;
+				background-color: red;
+				float: left;
+			}
+			
+			#navis {
+				width: 15%;
+				height: 85%;
+				background-color: #0066CC;
+				float: left;
+			}
+			
+			#viewDiv {
+				width: 65%;
+				height: 85%;
+				float: left;
+			}
+			
+			#inf {
+				width: 20%;
+				height: 85%;
+				background-color: #0066CC;
+				float: left;
+			}
+			
+			#bom {
+				width: 100%;
+				height: 5%;
+				background-color: #009933;
+				float: left;
+			}
+		</style>
+
+		<link rel="stylesheet" href="https://js.arcgis.com/4.15/esri/themes/light/main.css" />
+		<script src="http://pv.sohu.com/cityjson?ie=utf-8"></script>
+		<script src="https://js.arcgis.com/4.15/"></script>
+
+		<script>
+			var f;
+			var fs;
+			
+			require([
+				"esri/Map",
+				"esri/views/MapView",
+				"esri/Basemap",
+				"esri/layers/FeatureLayer",
+				"esri/widgets/Legend",
+				"esri/widgets/ScaleBar",
+				"esri/layers/TileLayer",
+				"esri/widgets/Search"
+			], function(Map, MapView, Basemap, FeatureLayer, Legend, ScaleBar, TileLayer, Search) {
+				var basemap = new Basemap({
+					portalItem: {
+						id: "05752f4682ba43ac8745528b4d9ffe4d" // WGS84 Streets Vector webmap
+					}
+				});
+
+				var featureLayer = new FeatureLayer({
+					url: "https://www.arcgisonline.cn/server/rest/services/Hosted/%E4%BA%A4%E9%80%9A/FeatureServer",
+					outFields: ["*"], // Return all fields so it can be queried client-side
+					popupTemplate: { // Enable a popup
+						title: "{name}", // Show attribute value
+						content: function ft(feature) {
+							var divs=document.createElement("div");
+							var str=feature.graphic.attributes.name;
+							
+							document.getElementById("fram").src = "http://m.8684.cn/beijing_searchresult?q="+str.split("[")[0];
+							divs.innerHTML="介绍："+feature.graphic.attributes.caption+"</br>"
+							+"城区："+feature.graphic.attributes.area;
+							;
+							return divs
+						} // Display in pop-up
+					}
+				});
+
+				var map = new Map({
+					basemap: basemap,
+				});
+				map.add(featureLayer);
+				//map.add(tly);
+				var view = new MapView({
+					container: "viewDiv",
+					map: map,
+					zoom: 13,
+					center: [116.387, 39.9] // longitude, latitude
+				});
+				var legend = new Legend({
+					view: view,
+					layerInfos: [{
+						layer: featureLayer,
+						title: "交通信息"
+					}]
+				});
+				var scaleBar = new ScaleBar({
+					view: view,
+					style: "ruler",
+					unit: "metric"
+				});
+				const searchWidget = new Search({
+					view: view
+				});
+				// Adds the search widget below other elements in
+				// the top left corner of the view
+				view.ui.add(searchWidget, {
+					position: "top-left",
+					index: 2
+				});
+				view.ui.add(scaleBar, {
+					position: "bottom-left"
+
+				});
+				// Add widget to the bottom right corner of the view
+				view.ui.add(legend, "bottom-right");
+
+				setFeatureLayerViewFilter("class2='公交车站'");
+
+				function setFeatureLayerViewFilter(expression) {
+					view.whenLayerView(featureLayer).then(function(featureLayerView) {
+						featureLayerView.filter = {
+							where: expression
+						};
+					});
+				};
+				f = setFeatureLayerViewFilter;
+
+				function showCoordinates(pt) {
+					var coords = "当前信息：| 坐标 " + pt.latitude.toFixed(3) + " " + pt.longitude.toFixed(3) +
+						" | 比例尺 1:" + Math.round(view.scale * 1) / 1 +
+						" | 缩放比 " + view.zoom + " | 用户位置 " + returnCitySN["cname"];
+					bom.innerHTML = coords;
+				};
+				view.watch("stationary", function(isStationary) {
+					showCoordinates(view.center);
+				});
+
+				view.on("pointer-move", function(evt) {
+					showCoordinates(view.toMap({
+						x: evt.x,
+						y: evt.y
+					}));
+				});
+
+				function sca(i) {
+					view.zoom = i;
+				};
+				fs = sca;
+
+			});
+		</script>
+	</head>
+
+	<body>
+		<div id="head">
+			
+			<img src="02(已去底).png" style="width: 5%; height: 100%;float: left;"/>
+			<h1 style="font-family:verdana ;color: white;float: left;" >·北京公共交通信息·</h1>
+		</div>
+		<div id="navis">
+			<div style="width: 100%;height: 4%; background-color:darkcyan;text-align: center">
+				<font color="aliceblue">分类导航栏</font>
+			</div>
+			<button onclick="fs(13);f()" style="width: 100%;height: 10%;">全部</button></br>
+			<button onclick="fs(13);f(&quot;class2=&#x27;公交车站&#x27;&quot;)" style="width: 100%;height: 10%;">公交车站</button></br>
+			<button onclick="fs(13);f(&quot;class2=&#x27;地铁站&#x27; or class2=&#x27;地铁站出入口&#x27;&quot;)" style="width: 100%;height: 10%;">地铁</button></br>
+			<button onclick="fs(10);f(&quot;class2=&#x27;火车站&#x27;&quot;)" style="width: 100%;height: 10%;">火车站</button></br>
+			<button onclick="fs(9);f(&quot;class2=&#x27;长途汽车站&#x27;&quot;)" style="width: 100%;height: 10%;">长途汽车站</button></br>
+			<button onclick="fs(13);f(&quot;class2=&#x27;公共厕所&#x27;&quot;)" style="width: 100%;height: 10%;">公共厕所</button></br>
+
+		</div>
+		<div id="viewDiv"></div>
+		<div id="inf">
+			<iframe  id="fram" src="http://m.8684.cn/beijing_bus" 
+				height="100%" width="100%" frameborder="0" scrolling="0">
+				
+			</iframe>
+
+		</div>
+		<div id="bom"></div>
+	</body>
+
+</html>
